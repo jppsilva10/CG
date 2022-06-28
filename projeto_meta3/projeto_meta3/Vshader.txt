@@ -1,0 +1,80 @@
+
+varying vec3  vNormal;
+
+//varying vec3  reflected;
+
+uniform vec3  cameraPosition;
+
+varying vec3  Position;
+
+varying vec4  cor;
+
+uniform float translate;
+
+uniform vec3  Direcao;
+
+uniform float op;
+
+uniform float Luz;
+vec3 luz;
+
+vec4 corA = vec4( 0.24725 ,0.1995 ,0.0745 ,1.0);
+vec4 corD = vec4( 0.75164 ,0.60648 ,0.22648 ,1.0);
+vec4 corS = vec4( 0.628281 ,0.555802 ,0.366065 ,1.0);
+float coef = 0.4 * 128;
+float ref = 0.3;
+
+
+uniform float Animation;
+uniform float Time;
+
+void main(void) {
+	
+	vNormal = gl_Normal ; 
+	gl_Position =  gl_Vertex;
+	if(op==0){
+		gl_Position.x = gl_Position.x + Direcao.x;
+		gl_Position.y = gl_Position.y + Direcao.y;
+		gl_Position.z = gl_Position.z + Direcao.z;
+	}
+	else{
+		gl_Position.x = gl_Position.x + translate;
+		if(op==2 && Animation == 1){
+			float time = Time/20;
+			gl_Position.x = gl_Position.x - time+1;
+			float y = 6 + 0.5*(-9.81)*time*time;
+			float i = 6;
+			float x = 0;
+			while(y<=0 && i>0.0001){
+				i = i/1.8;
+				x= sqrt((i)/(0.5*9.81));
+				x = 2*x;
+				time = time -x;
+				y = i + 0.5*(-9.81)*time*time;
+			}
+			if (y<0){
+				y=0;
+			}
+			gl_Position.y = gl_Position.y + y;
+		}
+	}
+	Position = gl_Position.xyz;	
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Position;
+	gl_TexCoord[0] = gl_MultiTexCoord0;
+	
+	vec3 nNormal = normalize(gl_Normal);
+	if(Luz==1){
+		luz = normalize(Direcao-Position);
+	}
+	else{
+		luz = normalize(Direcao);
+	}
+	
+	float intensityD = max( dot( nNormal, luz), 0.0);
+	vec3 r = 2*dot( nNormal, luz)*nNormal-luz;
+	vec3 obs = normalize(cameraPosition - Position);
+	float intensityS = pow(max( dot( obs, r), 0.0), coef);
+	cor = corA + intensityD*corD + intensityS*corS;
+	
+}
+

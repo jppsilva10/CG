@@ -1,0 +1,95 @@
+
+uniform vec3  Direcao;
+varying vec3  vNormal;
+//varying vec3  reflected;
+varying vec3  Position;
+uniform vec3  cameraPosition;
+
+varying vec4    cor;
+uniform sampler2D text ;
+uniform float op;
+uniform samplerCube text7;
+uniform float reflection;
+uniform float refraction;
+
+float intensity;
+
+vec4 corA = vec4( 0.24725 ,0.1995 ,0.0745 ,1.0);
+vec4 corD = vec4( 0.75164 ,0.60648 ,0.22648 ,1.0);
+vec4 corS = vec4( 0.628281 ,0.555802 ,0.366065 ,1.0);
+float coef = 0.4 * 128;
+float ref = 0.3;
+
+
+uniform float Luz;
+vec3 luz;
+
+void main(void) {
+	vec3  nNormal= normalize( vNormal) ;
+	if(Luz==1){
+		luz = normalize(Direcao-Position);
+	}
+	else{
+		luz = normalize(Direcao);
+	}
+	
+	if ( op == 1){ 
+	  	gl_FragColor  = texture( text7,  Position );
+	}
+	else if (op == 0){
+		vec3 reflected = normalize(cameraPosition - Position);
+		reflected =  2*dot( nNormal, reflected)*nNormal-reflected;
+		gl_FragColor  = texture( text7,  reflected );
+		
+		float ratio = 1.00 / 1.33;
+		vec3 refracted = normalize(cameraPosition - Position);
+		refracted = -refracted;
+		float angi = acos(dot(-nNormal, refracted));
+		float angr = asin(ratio*sin(angi));
+		refracted = cos(angr)*(-nNormal) + sin(angr)*(refracted);
+		refracted = normalize(refracted);
+		gl_FragColor  = 0.3*gl_FragColor +  0.7*texture( text7,  refracted );
+		
+	}
+	else if (op == 3){
+		gl_FragColor = cor;
+	}
+
+	else{
+		float intensityD = max( dot( nNormal, luz), 0.0);
+		vec3 r = 2*dot( nNormal, luz)*nNormal-luz;
+		vec3 obs = normalize(cameraPosition - Position);
+		float intensityS = pow(max( dot( obs, r), 0.0), coef);
+
+		gl_FragColor= corA + intensityD*corD + intensityS*corS;
+		//gl_FragColor= corA;
+
+		if(reflection==1){
+			vec3 reflected = normalize(cameraPosition - Position);
+			reflected =  2*dot( nNormal, reflected)*nNormal-reflected;
+			gl_FragColor  = corD *texture( text7,  reflected ) + intensityS*corS + 0.2*intensityD*corD;
+		}
+
+		gl_FragColor[0]= min(gl_FragColor[0], 1.0);
+		gl_FragColor[1]= min(gl_FragColor[1], 1.0);
+		gl_FragColor[2]= min(gl_FragColor[2], 1.0);
+		gl_FragColor[3]= 1;
+		 
+
+		if(refraction==1){
+			float ratio = 1.00 / 1.33;
+			vec3 refracted = normalize(cameraPosition - Position);
+			refracted = -refracted;
+			float angi = acos(dot(-nNormal, refracted));
+			float angr = asin(ratio*sin(angi));
+			refracted = cos(angr)*(-nNormal) + sin(angr)*(refracted);
+			refracted = normalize(refracted);
+			gl_FragColor  = 0.3*gl_FragColor +  0.7*corD*texture( text7,  refracted );
+		}
+		gl_FragColor[0]= min(gl_FragColor[0], 1.0);
+		gl_FragColor[1]= min(gl_FragColor[1], 1.0);
+		gl_FragColor[2]= min(gl_FragColor[2], 1.0);
+		gl_FragColor[3]= 1;
+		
+	}
+}
